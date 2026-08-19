@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('companies', function (Blueprint $table) {
             if (! Schema::hasColumn('companies', 'allowed_permissions')) {
-                $table->json('allowed_permissions')->nullable()->after('notes');
+                $table->json('allowed_permissions')->nullable();
             }
         });
     }

@@ -13,46 +13,61 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('subscription_plans', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('slug')->unique();
-            $table->decimal('price', 12, 2)->default(0);
-            $table->string('currency', 8)->default('XOF');
-            $table->string('interval')->default('month');
-            $table->unsignedInteger('trial_days')->default(14);
-            $table->boolean('is_active')->default(true);
-            $table->unsignedInteger('sort_order')->default(0);
-            $table->json('features')->nullable();
-            $table->text('description')->nullable();
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('subscription_plans')) {
+            Schema::create('subscription_plans', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->string('slug')->unique();
+                $table->decimal('price', 12, 2)->default(0);
+                $table->string('currency', 8)->default('XOF');
+                $table->string('interval')->default('month');
+                $table->unsignedInteger('trial_days')->default(14);
+                $table->boolean('is_active')->default(true);
+                $table->unsignedInteger('sort_order')->default(0);
+                $table->json('features')->nullable();
+                $table->text('description')->nullable();
+                $table->timestamps();
+            });
+        }
 
-        Schema::create('companies', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->nullable();
-            $table->string('phone')->nullable();
-            $table->string('city')->nullable();
-            $table->string('country')->nullable();
-            $table->text('address')->nullable();
-            $table->foreignId('subscription_plan_id')->nullable()->constrained('subscription_plans')->nullOnDelete();
-            $table->string('status')->default('trialing');
-            $table->timestamp('trial_ends_at')->nullable();
-            $table->timestamp('subscription_ends_at')->nullable();
-            $table->boolean('is_suspended')->default(false);
-            $table->unsignedBigInteger('owner_user_id')->nullable();
-            $table->text('notes')->nullable();
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('companies')) {
+            Schema::create('companies', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->string('email')->nullable();
+                $table->string('phone')->nullable();
+                $table->string('city')->nullable();
+                $table->string('country')->nullable();
+                $table->text('address')->nullable();
+                $table->foreignId('subscription_plan_id')->nullable()->constrained('subscription_plans')->nullOnDelete();
+                $table->string('status')->default('trialing');
+                $table->timestamp('trial_ends_at')->nullable();
+                $table->timestamp('subscription_ends_at')->nullable();
+                $table->boolean('is_suspended')->default(false);
+                $table->unsignedBigInteger('owner_user_id')->nullable();
+                $table->text('notes')->nullable();
+                $table->timestamps();
+            });
+        }
 
-        Schema::table('users', function (Blueprint $table) {
-            if (! Schema::hasColumn('users', 'company_id')) {
-                $table->unsignedBigInteger('company_id')->nullable()->after('id');
-                $table->boolean('is_platform_admin')->default(false)->after('company_id');
+        // TiDB n'accepte pas AFTER sur une colonne ajoutée dans la même requête.
+        if (! Schema::hasColumn('users', 'company_id')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->unsignedBigInteger('company_id')->nullable();
+            });
+        }
+        if (! Schema::hasColumn('users', 'is_platform_admin')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->boolean('is_platform_admin')->default(false);
+            });
+        }
+        try {
+            Schema::table('users', function (Blueprint $table) {
                 $table->index('company_id');
-            }
-        });
+            });
+        } catch (\Throwable $e) {
+            // index déjà présent
+        }
 
         $tenantTables = [
             'warehouses', 'brands', 'product_categories', 'products', 'main_products',
@@ -75,7 +90,11 @@ return new class extends Migration
             });
         }
 
-        $starterId = DB::table('subscription_plans')->insertGetId([
+        $starter = DB::table('subscription_plans')->where('slug', 'starter')->first();
+        if ($starter) {
+            $starterId = $starter->id;
+        } else {
+            $starterId = DB::table('subscription_plans')->insertGetId([
             'name' => 'Starter',
             'slug' => 'starter',
             'price' => 0,
@@ -88,24 +107,30 @@ return new class extends Migration
             'description' => 'Plan de démarrage : caisse, stock, utilisateurs et rôles.',
             'created_at' => now(),
             'updated_at' => now(),
-        ]);
+            ]);
+        }
 
-        $companyId = DB::table('companies')->insertGetId([
-            'name' => 'Magasin démo',
-            'email' => 'admin@infy-pos.com',
-            'country' => "Côte d'Ivoire",
-            'city' => 'Abidjan',
-            'subscription_plan_id' => $starterId,
-            'status' => 'trialing',
-            'trial_ends_at' => now()->addDays(14),
-            'is_suspended' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $company = DB::table('companies')->orderBy('id')->first();
+        if ($company) {
+            $companyId = $company->id;
+        } else {
+            $companyId = DB::table('companies')->insertGetId([
+                'name' => 'Magasin démo',
+                'email' => 'admin@bstock.ci',
+                'country' => "Côte d'Ivoire",
+                'city' => 'Abidjan',
+                'subscription_plan_id' => $starterId,
+                'status' => 'trialing',
+                'trial_ends_at' => now()->addDays(14),
+                'is_suspended' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         DB::table('users')->update(['company_id' => $companyId, 'is_platform_admin' => false]);
 
-        $ownerId = DB::table('users')->where('email', 'admin@infy-pos.com')->value('id');
+        $ownerId = DB::table('users')->whereIn('email', ['admin@infy-pos.com', 'admin@bstock.ci'])->value('id');
         if ($ownerId) {
             DB::table('companies')->where('id', $companyId)->update(['owner_user_id' => $ownerId]);
         }
