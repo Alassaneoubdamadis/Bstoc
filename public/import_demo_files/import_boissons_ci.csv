@@ -1,0 +1,51 @@
+name,code,category,brand,Barcode symbol,product cost,product price,product unit,sale unit,purchase unit,stock alert,order tax Percentage,tax type,Notes,Warehouse,supplier,quantity,status
+Bock 60cl,88000001,Bieres,SOLIBRA,CODE128,350,600,piece,Piece,Piece,20,0,EXCLUSIVE,Biere blonde ivoirienne 60cl,warehouse,demo supplier,120,received
+Bock 33cl,88000002,Bieres,SOLIBRA,CODE128,220,400,piece,Piece,Piece,20,0,EXCLUSIVE,Biere blonde ivoirienne 33cl,warehouse,demo supplier,150,received
+Bock Canette 50cl,88000003,Bieres,SOLIBRA,CODE128,300,550,piece,Piece,Piece,15,0,EXCLUSIVE,Bock en canette 50cl,warehouse,demo supplier,100,received
+Flag Speciale 65cl,88000004,Bieres,SOLIBRA,CODE128,420,750,piece,Piece,Piece,20,0,EXCLUSIVE,Flag Speciale 65cl,warehouse,demo supplier,100,received
+Flag 33cl,88000005,Bieres,SOLIBRA,CODE128,280,500,piece,Piece,Piece,20,0,EXCLUSIVE,Flag 33cl,warehouse,demo supplier,120,received
+Flag Pils 65cl,88000006,Bieres,SOLIBRA,CODE128,400,700,piece,Piece,Piece,15,0,EXCLUSIVE,Flag Pils 65cl,warehouse,demo supplier,80,received
+Castel Beer 65cl,88000007,Bieres,Castel,CODE128,450,800,piece,Piece,Piece,20,0,EXCLUSIVE,Castel Beer 65cl,warehouse,demo supplier,90,received
+Castel Beer 33cl,88000008,Bieres,Castel,CODE128,280,500,piece,Piece,Piece,20,0,EXCLUSIVE,Castel Beer 33cl,warehouse,demo supplier,110,received
+Beaufort 65cl,88000009,Bieres,SOLIBRA,CODE128,450,800,piece,Piece,Piece,15,0,EXCLUSIVE,Beaufort Lager 65cl,warehouse,demo supplier,80,received
+Ivoire Biere 65cl,88000010,Bieres,SOLIBRA,CODE128,380,650,piece,Piece,Piece,15,0,EXCLUSIVE,Biere Ivoire 65cl,warehouse,demo supplier,70,received
+Doppel Munich 65cl,88000011,Bieres,SOLIBRA,CODE128,500,900,piece,Piece,Piece,10,0,EXCLUSIVE,Biere brune Doppel Munich,warehouse,demo supplier,60,received
+Guinness Foreign Extra 60cl,88000012,Bieres,Guinness,CODE128,550,1000,piece,Piece,Piece,15,0,EXCLUSIVE,Guinness FES 60cl,warehouse,demo supplier,80,received
+Guinness Smooth 33cl,88000013,Bieres,Guinness,CODE128,400,700,piece,Piece,Piece,15,0,EXCLUSIVE,Guinness Smooth 33cl,warehouse,demo supplier,70,received
+Heineken 33cl,88000014,Bieres,Heineken,CODE128,400,700,piece,Piece,Piece,20,0,EXCLUSIVE,Heineken 33cl,warehouse,demo supplier,100,received
+Heineken 65cl,88000015,Bieres,Heineken,CODE128,650,1100,piece,Piece,Piece,10,0,EXCLUSIVE,Heineken 65cl,warehouse,demo supplier,50,received
+Desperados 33cl,88000016,Bieres,Heineken,CODE128,450,800,piece,Piece,Piece,10,0,EXCLUSIVE,Desperados tequila 33cl,warehouse,demo supplier,60,received
+33 Export 65cl,88000017,Bieres,Castel,CODE128,420,750,piece,Piece,Piece,15,0,EXCLUSIVE,33 Export 65cl,warehouse,demo supplier,70,received
+Budweiser 33cl,88000018,Bieres,Budweiser,CODE128,400,700,piece,Piece,Piece,10,0,EXCLUSIVE,Budweiser 33cl,warehouse,demo supplier,60,received
+Corona Extra 33cl,88000019,Bieres,Corona,CODE128,500,900,piece,Piece,Piece,10,0,EXCLUSIVE,Corona Extra 33cl,warehouse,demo supplier,50,received
+Malta Guinness 33cl,88000020,Bieres,Guinness,CODE128,250,450,piece,Piece,Piece,20,0,EXCLUSIVE,Malta non alcoolisee 33cl,warehouse,demo supplier,90,received
+Coca-Cola 33cl,88000021,Sodas,Coca-Cola,CODE128,180,350,piece,Piece,Piece,30,0,EXCLUSIVE,Coca-Cola verre 33cl,warehouse,demo supplier,200,received
+Coca-Cola 50cl,88000022,Sodas,Coca-Cola,CODE128,250,500,piece,Piece,Piece,25,0,EXCLUSIVE,Coca-Cola PET 50cl,warehouse,demo supplier,180,received
+Coca-Cola 1.5L,88000023,Sodas,Coca-Cola,CODE128,500,900,piece,Piece,Piece,20,0,EXCLUSIVE,Coca-Cola PET 1.5L,warehouse,demo supplier,120,received
+Coca-Cola 2L,88000024,Sodas,Coca-Cola,CODE128,650,1100,piece,Piece,Piece,15,0,EXCLUSIVE,Coca-Cola PET 2L,warehouse,demo supplier,80,received
+Coca-Cola Zero 33cl,88000025,Sodas,Coca-Cola,CODE128,200,400,piece,Piece,Piece,15,0,EXCLUSIVE,Coca-Cola Zero 33cl,warehouse,demo supplier,80,received
+Fanta Orange 33cl,88000026,Sodas,Coca-Cola,CODE128,180,350,piece,Piece,Piece,25,0,EXCLUSIVE,Fanta Orange 33cl,warehouse,demo supplier,160,received
+Fanta Orange 1.5L,88000027,Sodas,Coca-Cola,CODE128,500,900,piece,Piece,Piece,15,0,EXCLUSIVE,Fanta Orange 1.5L,warehouse,demo supplier,90,received
+Fanta Passion 33cl,88000028,Sodas,Coca-Cola,CODE128,180,350,piece,Piece,Piece,15,0,EXCLUSIVE,Fanta Passion 33cl,warehouse,demo supplier,100,received
+Sprite 33cl,88000029,Sodas,Coca-Cola,CODE128,180,350,piece,Piece,Piece,25,0,EXCLUSIVE,Sprite 33cl,warehouse,demo supplier,150,received
+Sprite 1.5L,88000030,Sodas,Coca-Cola,CODE128,500,900,piece,Piece,Piece,15,0,EXCLUSIVE,Sprite 1.5L,warehouse,demo supplier,80,received
+Youki 33cl,88000031,Sodas,SOLIBRA,CODE128,150,300,piece,Piece,Piece,25,0,EXCLUSIVE,Youki soda local 33cl,warehouse,demo supplier,180,received
+Youki 1L,88000032,Sodas,SOLIBRA,CODE128,350,600,piece,Piece,Piece,20,0,EXCLUSIVE,Youki 1L,warehouse,demo supplier,100,received
+Youki Ananas 33cl,88000033,Sodas,SOLIBRA,CODE128,150,300,piece,Piece,Piece,20,0,EXCLUSIVE,Youki Ananas 33cl,warehouse,demo supplier,120,received
+Schweppes Tonic 33cl,88000034,Sodas,Coca-Cola,CODE128,200,400,piece,Piece,Piece,15,0,EXCLUSIVE,Schweppes Tonic 33cl,warehouse,demo supplier,80,received
+Schweppes Agrum 33cl,88000035,Sodas,Coca-Cola,CODE128,200,400,piece,Piece,Piece,10,0,EXCLUSIVE,Schweppes Agrum 33cl,warehouse,demo supplier,70,received
+Vimto 33cl,88000036,Sodas,Vimto,CODE128,200,400,piece,Piece,Piece,15,0,EXCLUSIVE,Vimto 33cl,warehouse,demo supplier,90,received
+Orangina 25cl,88000037,Sodas,Orangina,CODE128,250,450,piece,Piece,Piece,10,0,EXCLUSIVE,Orangina 25cl,warehouse,demo supplier,70,received
+Pepsi 33cl,88000038,Sodas,Pepsi,CODE128,180,350,piece,Piece,Piece,15,0,EXCLUSIVE,Pepsi 33cl,warehouse,demo supplier,80,received
+Tampico Orange 50cl,88000039,Jus,Tampico,CODE128,250,500,piece,Piece,Piece,20,0,EXCLUSIVE,Jus Tampico orange 50cl,warehouse,demo supplier,100,received
+Tampico Orange 1L,88000040,Jus,Tampico,CODE128,450,800,piece,Piece,Piece,15,0,EXCLUSIVE,Jus Tampico orange 1L,warehouse,demo supplier,80,received
+Cocktail SOLIBRA 1L,88000041,Jus,SOLIBRA,CODE128,400,750,piece,Piece,Piece,15,0,EXCLUSIVE,Cocktail fruits SOLIBRA 1L,warehouse,demo supplier,70,received
+Top Ananas 1L,88000042,Jus,SOLIBRA,CODE128,380,700,piece,Piece,Piece,15,0,EXCLUSIVE,Jus Top Ananas 1L,warehouse,demo supplier,70,received
+Top Citron 1L,88000043,Jus,SOLIBRA,CODE128,380,700,piece,Piece,Piece,10,0,EXCLUSIVE,Jus Top Citron 1L,warehouse,demo supplier,60,received
+Pamplemousse SOLIBRA 1L,88000044,Jus,SOLIBRA,CODE128,400,750,piece,Piece,Piece,10,0,EXCLUSIVE,Jus pamplemousse 1L,warehouse,demo supplier,50,received
+Eau Awa 1.5L,88000045,Eaux,Awa,CODE128,200,400,piece,Piece,Piece,30,0,EXCLUSIVE,Eau minerale Awa 1.5L,warehouse,demo supplier,200,received
+Eau Awa 50cl,88000046,Eaux,Awa,CODE128,100,200,piece,Piece,Piece,30,0,EXCLUSIVE,Eau minerale Awa 50cl,warehouse,demo supplier,250,received
+Eau Celeste 1.5L,88000047,Eaux,Celeste,CODE128,180,350,piece,Piece,Piece,25,0,EXCLUSIVE,Eau Celeste 1.5L,warehouse,demo supplier,150,received
+Eau Olgane 1.5L,88000048,Eaux,Olgane,CODE128,180,350,piece,Piece,Piece,20,0,EXCLUSIVE,Eau Olgane 1.5L,warehouse,demo supplier,120,received
+XXL Energy 25cl,88000049,Energy,XXL,CODE128,300,600,piece,Piece,Piece,15,0,EXCLUSIVE,Boisson energetique XXL 25cl,warehouse,demo supplier,90,received
+Red Bull 25cl,88000050,Energy,Red Bull,CODE128,500,1000,piece,Piece,Piece,10,0,EXCLUSIVE,Red Bull 25cl,warehouse,demo supplier,60,received
