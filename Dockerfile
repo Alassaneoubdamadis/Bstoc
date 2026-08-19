@@ -12,8 +12,15 @@ COPY resources ./resources
 COPY public ./public
 RUN npm run production
 
-FROM composer:2 AS vendor
+FROM php:8.2-cli-bookworm AS vendor
 WORKDIR /app
+ENV COMPOSER_ALLOW_SUPERUSER=1
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git unzip libpng-dev libjpeg62-turbo-dev libfreetype6-dev libzip-dev libicu-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd exif zip intl \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY composer.json composer.lock ./
 RUN composer install \
     --no-dev \
