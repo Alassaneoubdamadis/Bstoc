@@ -1,5 +1,5 @@
 #!/bin/sh
-set -eu
+set -u
 
 PORT="${PORT:-10000}"
 export PORT
@@ -21,9 +21,14 @@ if [ ! -L public/storage ]; then
   php artisan storage:link --force || true
 fi
 
-php artisan config:clear
-php artisan migrate --force --no-interaction
-php artisan config:cache
-php artisan view:cache
+php artisan config:clear || true
 
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+# Ouvrir $PORT tout de suite (Render tue le deploy si rien n'écoute pendant les migrations).
+/usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf &
+SUPERVISOR_PID=$!
+
+php artisan migrate --force --no-interaction || echo "WARN: migrate a échoué, le site écoute quand même."
+php artisan config:cache || true
+php artisan view:cache || true
+
+wait "${SUPERVISOR_PID}"

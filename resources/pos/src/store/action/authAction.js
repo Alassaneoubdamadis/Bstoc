@@ -50,8 +50,9 @@ export const loginAction = (user, navigate, setLoading) => async (dispatch) => {
                 window.location.reload()
             }
         })
-        .catch(({response}) => {
-            dispatch(addToast({text: response.data.message, type: toastType.ERROR}));
+        .catch((error) => {
+            const text = error?.response?.data?.message || 'Connexion impossible.';
+            dispatch(addToast({text, type: toastType.ERROR}));
             setLoading(false);
         });
 };

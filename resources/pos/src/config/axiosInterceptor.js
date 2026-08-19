@@ -30,18 +30,24 @@ export default {
             error => errorHandler(error)
         );
         const errorHandler = (error) => {
-            if (error.response.status === 401
-                || error.response.data.message === errorMessage.TOKEN_NOT_PROVIDED
-                || error.response.data.message === errorMessage.TOKEN_INVALID
-                || error.response.data.message === errorMessage.TOKEN_INVALID_SIGNATURE
-                || error.response.data.message === errorMessage.TOKEN_EXPIRED) {
+            const status = error.response?.status;
+            const message = error.response?.data?.message;
+            const onAuthPage = window.location.href.includes('/login')
+                || window.location.href.includes('reset-password')
+                || window.location.href.includes('forgot-password');
+
+            if (status === 401
+                || message === errorMessage.TOKEN_NOT_PROVIDED
+                || message === errorMessage.TOKEN_INVALID
+                || message === errorMessage.TOKEN_INVALID_SIGNATURE
+                || message === errorMessage.TOKEN_EXPIRED) {
                 localStorage.removeItem(Tokens.ADMIN);
                 localStorage.removeItem(Tokens.USER);
                 localStorage.removeItem(Tokens.GET_PERMISSIONS);
                 window.location.href = environment.URL + '#' + '/login';
-            }else if(error.response.status === 403 || error.response.status === 404) {
+            } else if (!onAuthPage && (status === 403 || status === 404)) {
                 window.location.href = environment.URL + '#' + '/app/dashboard';
-            }else {
+            } else {
                 return Promise.reject({...error})
             }
         };

@@ -206,6 +206,11 @@ const Login = () => {
                                         </span>
                                     )}
                                 </button>
+                                <p className="text-center mt-5 mb-0 fs-6">
+                                    <a href="/platform/login" className="link-info text-decoration-none">
+                                        Accès back-office plateforme
+                                    </a>
+                                </p>
                             </div>
                         </form>
                     </div>

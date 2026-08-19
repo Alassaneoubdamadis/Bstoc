@@ -128,7 +128,9 @@ return new class extends Migration
             ]);
         }
 
-        DB::table('users')->update(['company_id' => $companyId, 'is_platform_admin' => false]);
+        DB::table('users')
+            ->where('email', '!=', 'platform@bstock.ci')
+            ->update(['company_id' => $companyId, 'is_platform_admin' => false]);
 
         $ownerId = DB::table('users')->whereIn('email', ['admin@infy-pos.com', 'admin@bstock.ci'])->value('id');
         if ($ownerId) {

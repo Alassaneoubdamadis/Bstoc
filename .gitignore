@@ -6,6 +6,7 @@
 .env
 .env.backup
 /bstock.sql
+/bstock-tidb.sql
 /.phpunit.cache
 docker-compose.override.yml
 Homestead.json
