@@ -1,0 +1,47 @@
+# Blueprint optionnel : Dashboard Render → New Blueprint
+# Le plan "free" web spin-down après inactivité (~15 min).
+# Render ne fournit PAS de MySQL gratuit : renseigner DB_* depuis un MySQL externe.
+
+services:
+  - type: web
+    name: bstock
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /
+    envVars:
+      - key: APP_NAME
+        value: B-Stock
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: error
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_PORT
+        value: "3306"
+      - key: CACHE_DRIVER
+        value: file
+      - key: SESSION_DRIVER
+        value: cookie
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: FILESYSTEM_DISK
+        value: public
+      - key: MEDIA_DISK
+        value: public
+      - key: QUEUE_CONVERSIONS_BY_DEFAULT
+        value: "false"
+      - key: BROADCAST_DRIVER
+        value: log
+      - key: MAIL_MAILER
+        value: log
+      - key: UPGRADE_MODE
+        value: "false"
+      - key: POS_PUBLIC_REGISTER
+        value: "false"
