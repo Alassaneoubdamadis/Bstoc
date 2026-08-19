@@ -29,7 +29,8 @@ RUN composer install \
     --prefer-dist \
     --no-interaction
 COPY . .
-RUN composer dump-autoload --optimize --classmap-authoritative --no-dev
+RUN rm -f bootstrap/cache/packages.php bootstrap/cache/services.php \
+    && composer dump-autoload --optimize --classmap-authoritative --no-dev --no-scripts
 
 FROM php:8.2-fpm-bookworm
 WORKDIR /var/www/html
