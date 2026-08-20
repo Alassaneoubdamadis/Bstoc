@@ -50,9 +50,11 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
                     throw new UnprocessableEntityHttpException('Code produit déjà existant : '.$row[1].' (ligne '.$rowLabel.').');
                 }
 
-                $productCategory = ProductCategory::whereName($row[2])->first();
+                $productCategoryId = $this->resolveNamedModel(ProductCategory::class, trim((string) $row[2]))->id;
                 $brandName = trim((string) ($row[3] ?? ''));
-                $brand = $brandName !== '' ? Brand::whereName($brandName)->first() : null;
+                $brandId = $brandName !== ''
+                    ? $this->resolveNamedModel(Brand::class, $brandName)->id
+                    : $this->resolveNamedModel(Brand::class, 'Sans marque')->id;
 
                 $baseUnitName = strtolower(trim((string) $row[7]));
                 $baseUnit = BaseUnit::whereRaw('LOWER(name) = ?', [$baseUnitName])->first();
@@ -66,23 +68,6 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
                 $productUnitId = $baseUnit->id;
                 $saleUnit = $this->resolveUnit(trim((string) $row[8]), $productUnitId);
                 $purchaseUnit = $this->resolveUnit(trim((string) $row[9]), $productUnitId);
-
-                if ($productCategory) {
-                    $productCategoryId = $productCategory->id;
-                } else {
-                    $productCategory = ProductCategory::create(['name' => $row[2]]);
-                    $productCategoryId = $productCategory->id;
-                }
-
-                if ($brand) {
-                    $brandId = $brand->id;
-                } elseif ($brandName !== '') {
-                    $brand = Brand::create(['name' => $brandName]);
-                    $brandId = $brand->id;
-                } else {
-                    $brand = Brand::firstOrCreate(['name' => 'Sans marque']);
-                    $brandId = $brand->id;
-                }
 
                 $barcodeRaw = strtoupper(trim((string) $row[4]));
                 if ($barcodeRaw === 'CODE128') {
@@ -229,6 +214,82 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
                     'Import impossible (ligne '.($key + 2).') : '.$e->getMessage()
                 );
             }
+        }
+    }
+
+    /**
+     * Marque / catégorie : retrouve (magasin ou legacy) ou crée, sans planter sur l'unique global.
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $modelClass
+     */
+    private function resolveNamedModel(string $modelClass, string $name)
+    {
+        $name = trim($name);
+        if ($name === '') {
+            throw new UnprocessableEntityHttpException('Nom requis pour '.class_basename($modelClass).'.');
+        }
+
+        $companyId = current_company_id();
+        $needle = strtolower($name);
+
+        $existing = $modelClass::withoutGlobalScopes()
+            ->when($companyId, fn ($q) => $q->where('company_id', $companyId))
+            ->whereRaw('LOWER(name) = ?', [$needle])
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        $legacy = $modelClass::withoutGlobalScopes()
+            ->whereNull('company_id')
+            ->whereRaw('LOWER(name) = ?', [$needle])
+            ->first();
+
+        if ($legacy) {
+            $legacy->company_id = $companyId;
+            $legacy->save();
+
+            return $legacy;
+        }
+
+        // Même nom déjà pris par une autre company / casse TiDB : rattacher au magasin courant si possible.
+        $any = $modelClass::withoutGlobalScopes()
+            ->whereRaw('LOWER(name) = ?', [$needle])
+            ->first();
+
+        if ($any) {
+            // Unique global : on réutilise la ligne existante pour ce magasin (pas idéal multi-tenant,
+            // mais évite le 422 ; l'index sera ensuite (company_id, name)).
+            if ($companyId && (int) $any->company_id !== (int) $companyId) {
+                try {
+                    return $modelClass::withoutGlobalScopes()->create([
+                        'name' => $name.' #'.$companyId,
+                        'company_id' => $companyId,
+                    ]);
+                } catch (\Throwable $e) {
+                    return $any;
+                }
+            }
+
+            return $any;
+        }
+
+        try {
+            return $modelClass::withoutGlobalScopes()->create([
+                'name' => $name,
+                'company_id' => $companyId,
+            ]);
+        } catch (\Throwable $e) {
+            $fallback = $modelClass::withoutGlobalScopes()
+                ->whereRaw('LOWER(name) = ?', [$needle])
+                ->first();
+            if ($fallback) {
+                return $fallback;
+            }
+            throw new UnprocessableEntityHttpException(
+                class_basename($modelClass).' « '.$name.' » : '.$e->getMessage()
+            );
         }
     }
 
