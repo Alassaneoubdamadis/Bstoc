@@ -36,19 +36,22 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
                 continue;
             }
             try {
-                DB::beginTransaction();
-
-                $taxType = null;
                 $rowLabel = $key + 2;
 
                 $productName = Product::whereName($row[0])->exists();
                 if ($productName) {
-                    throw new UnprocessableEntityHttpException('Produit déjà existant : '.$row[0].' (ligne '.$rowLabel.').');
+                    Log::info('Import ignoré, produit déjà existant : '.$row[0].' (ligne '.$rowLabel.')');
+                    continue;
                 }
                 $productCode = Product::where('code', $row[1])->exists();
                 if ($productCode) {
-                    throw new UnprocessableEntityHttpException('Code produit déjà existant : '.$row[1].' (ligne '.$rowLabel.').');
+                    Log::info('Import ignoré, code déjà existant : '.$row[1].' (ligne '.$rowLabel.')');
+                    continue;
                 }
+
+                DB::beginTransaction();
+
+                $taxType = null;
 
                 $productCategoryId = $this->resolveNamedModel(ProductCategory::class, trim((string) $row[2]))->id;
                 $brandName = trim((string) ($row[3] ?? ''));

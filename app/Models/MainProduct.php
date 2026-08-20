@@ -71,10 +71,22 @@ class MainProduct extends Model implements HasMedia, JsonResourceful
             'max_price' => empty($prices) ? 0 : max($prices),
             'images' => $this->image_url,
             'products' => $this->products->map(function ($product) {
-                $productData = $product->prepareAttributes();
-                $productData['id'] = $product->id;
+                try {
+                    $productData = $product->prepareAttributes();
+                    $productData['id'] = $product->id;
 
-                return $productData;
+                    return $productData;
+                } catch (\Throwable $e) {
+                    return [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'code' => $product->code,
+                        'product_price' => $product->product_price,
+                        'product_cost' => $product->product_cost,
+                        'brand_name' => '',
+                        'product_category_name' => '',
+                    ];
+                }
             }),
         ];
 

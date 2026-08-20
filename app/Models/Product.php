@@ -222,8 +222,8 @@ class Product extends BaseModel implements HasMedia, JsonResourceful
             'tax_type' => $this->tax_type,
             'notes' => $this->notes,
             'images' => $this->mainProduct->image_url ?? [],
-            'product_category_name' => $this->productCategory->name,
-            'brand_name' => $this->brand->name,
+            'product_category_name' => $this->productCategory()->withoutGlobalScopes()->value('name') ?? '',
+            'brand_name' => $this->brand()->withoutGlobalScopes()->value('name') ?? '',
             'barcode_image_url' => $this->barcode_image_url,
             'barcode_symbol' => $this->barcode_symbol,
             'created_at' => $this->created_at,
@@ -273,7 +273,7 @@ class Product extends BaseModel implements HasMedia, JsonResourceful
      */
     public function getPurchaseUnitName()
     {
-        $purchaseUnit = Unit::whereId($this->purchase_unit)->first();
+        $purchaseUnit = Unit::withoutGlobalScopes()->whereId($this->purchase_unit)->first();
         if ($purchaseUnit) {
             return $purchaseUnit->toArray();
         }
@@ -286,7 +286,7 @@ class Product extends BaseModel implements HasMedia, JsonResourceful
      */
     public function getSaleUnitName()
     {
-        $saleUnit = Unit::whereId($this->sale_unit)->first();
+        $saleUnit = Unit::withoutGlobalScopes()->whereId($this->sale_unit)->first();
         if ($saleUnit) {
             return $saleUnit->toArray();
         }
