@@ -23,6 +23,12 @@ class CreateUnitRequest extends FormRequest
      */
     public function rules(): array
     {
-        return Unit::$rules;
+        $companyId = current_company_id();
+
+        return [
+            'name' => 'required|unique:units,name,NULL,id,company_id,'.$companyId,
+            'short_name' => 'required',
+            'base_unit' => 'required',
+        ];
     }
 }

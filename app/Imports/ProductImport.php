@@ -242,27 +242,63 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
             throw new UnprocessableEntityHttpException('Unité de vente/achat manquante.');
         }
 
-        $unit = Unit::whereRaw('LOWER(name) = ?', [strtolower($name)])
-            ->whereBaseUnit($baseUnitId)
+        $companyId = current_company_id();
+        $needle = strtolower($name);
+
+        // 1) Unité du magasin (sans exiger base_unit : l'index unique est sur le nom).
+        $unit = Unit::withoutGlobalScopes()
+            ->when($companyId, fn ($q) => $q->where('company_id', $companyId))
+            ->whereRaw('LOWER(name) = ?', [$needle])
             ->first();
 
         if ($unit) {
+            if ((int) $unit->base_unit !== $baseUnitId) {
+                $unit->base_unit = $baseUnitId;
+                $unit->save();
+            }
+
             return $unit;
         }
 
-        // Tolère "Piece" / "piece" / "pc" pour l'unité de base piece.
-        $base = BaseUnit::find($baseUnitId);
-        if ($base && strtolower($base->name) === strtolower($name)) {
-            return Unit::create([
-                'name' => ucfirst(strtolower($name)),
-                'short_name' => strtolower(substr($name, 0, 2)),
-                'base_unit' => $baseUnitId,
-            ]);
+        // 2) Unité legacy (company_id null) réutilisable.
+        $legacy = Unit::withoutGlobalScopes()
+            ->whereNull('company_id')
+            ->whereRaw('LOWER(name) = ?', [$needle])
+            ->first();
+
+        if ($legacy) {
+            $legacy->company_id = $companyId;
+            $legacy->base_unit = $baseUnitId;
+            $legacy->save();
+
+            return $legacy;
         }
 
-        throw new UnprocessableEntityHttpException(
-            'Unité introuvable : '.$name.'. Créez-la dans Unités, ou utilisez le même nom que l’unité de base (piece, meter, kilogram).'
-        );
+        // 3) Création — si collision unique (autre magasin / casse TiDB), on récupère.
+        try {
+            return Unit::withoutGlobalScopes()->create([
+                'name' => $name,
+                'short_name' => strtolower(substr($name, 0, 3)),
+                'base_unit' => $baseUnitId,
+                'company_id' => $companyId,
+            ]);
+        } catch (\Throwable $e) {
+            $existing = Unit::withoutGlobalScopes()
+                ->whereRaw('LOWER(name) = ?', [$needle])
+                ->first();
+            if ($existing) {
+                if ($companyId && empty($existing->company_id)) {
+                    $existing->company_id = $companyId;
+                    $existing->save();
+                }
+
+                return $existing;
+            }
+
+            throw new UnprocessableEntityHttpException(
+                'Unité introuvable : '.$name.'. Créez-la dans Unités (piece, meter ou kilogram).'
+            );
+        }
     }
 
     public function chunkSize(): int

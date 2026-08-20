@@ -23,9 +23,12 @@ class UpdateUnitRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules = Unit::$rules;
-        $rules['name'] = 'required|unique:units,name,'.$this->route('unit');
+        $companyId = current_company_id();
 
-        return $rules;
+        return [
+            'name' => 'required|unique:units,name,'.$this->route('unit').',id,company_id,'.$companyId,
+            'short_name' => 'required',
+            'base_unit' => 'required',
+        ];
     }
 }

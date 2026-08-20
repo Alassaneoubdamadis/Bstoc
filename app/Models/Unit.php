@@ -44,7 +44,7 @@ class Unit extends BaseModel
     ];
 
     public static $rules = [
-        'name' => 'required|unique:units',
+        'name' => 'required',
         'short_name' => 'required',
         'base_unit' => 'required',
     ];
