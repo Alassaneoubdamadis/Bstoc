@@ -209,10 +209,14 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
                         break;
                 }
 
-                Storage::disk(config('app.media_disc'))->put(
-                    'product_barcode/barcode-'.$reference_code.'.png',
-                    $generator->getBarcode($row[1], $barcodeType, 4, 70)
-                );
+                try {
+                    Storage::disk(config('app.media_disc'))->put(
+                        'product_barcode/barcode-'.$reference_code.'.png',
+                        $generator->getBarcode($row[1], $barcodeType, 4, 70)
+                    );
+                } catch (\Throwable $barcodeError) {
+                    Log::warning('Barcode non généré pour '.$reference_code.': '.$barcodeError->getMessage());
+                }
 
                 DB::commit();
             } catch (UnprocessableEntityHttpException $e) {

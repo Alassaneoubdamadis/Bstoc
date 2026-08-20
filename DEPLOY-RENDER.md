@@ -37,6 +37,7 @@ APP_KEY=base64:...          # php artisan key:generate --show  (en local)
 APP_URL=https://VOTRE-SERVICE.onrender.com
 LOG_CHANNEL=stderr
 LOG_LEVEL=error
+# Ne pas mettre LOG_CHANNEL=stack sur Render (sinon Permission denied sur laravel.log)
 DB_CONNECTION=mysql
 DB_HOST=
 DB_PORT=3306
