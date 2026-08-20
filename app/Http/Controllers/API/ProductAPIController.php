@@ -155,9 +155,28 @@ class ProductAPIController extends AppBaseController
 
     public function importProducts(Request $request): JsonResponse
     {
-        Excel::import(new ProductImport, request()->file('file'));
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:10240',
+        ], [
+            'file.required' => 'Choisissez un fichier CSV à importer.',
+            'file.mimes' => 'Le fichier doit être un CSV (ou Excel).',
+            'file.max' => 'Le fichier ne doit pas dépasser 10 Mo.',
+        ]);
 
-        return $this->sendSuccess('Products imported successfully');
+        try {
+            Excel::import(new ProductImport, $request->file('file'));
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $messages = [];
+            foreach ($e->failures() as $failure) {
+                $messages[] = 'Ligne '.$failure->row().' : '.implode(', ', $failure->errors());
+            }
+
+            return $this->sendError($messages ? implode(' | ', $messages) : 'Fichier CSV invalide.', 422);
+        } catch (UnprocessableEntityHttpException $e) {
+            return $this->sendError($e->getMessage(), 422);
+        }
+
+        return $this->sendSuccess('Produits importés avec succès.');
     }
 
     public function getProductExportExcel(Request $request): JsonResponse

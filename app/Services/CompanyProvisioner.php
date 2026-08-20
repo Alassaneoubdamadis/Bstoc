@@ -36,12 +36,22 @@ class CompanyProvisioner
             'address' => 'Magasin',
             'company_id' => $companyId,
         ]);
-        Unit::withoutGlobalScopes()->create([
-            'name' => 'Piece',
-            'short_name' => 'pc',
-            'base_unit' => 1,
-            'company_id' => $companyId,
-        ]);
+        foreach ([
+            ['name' => 'Piece', 'short_name' => 'pc', 'base_unit' => 1],
+            ['name' => 'meter', 'short_name' => 'm', 'base_unit' => 2],
+            ['name' => 'kilogram', 'short_name' => 'kg', 'base_unit' => 3],
+        ] as $unit) {
+            Unit::withoutGlobalScopes()->firstOrCreate(
+                [
+                    'name' => $unit['name'],
+                    'company_id' => $companyId,
+                ],
+                [
+                    'short_name' => $unit['short_name'],
+                    'base_unit' => $unit['base_unit'],
+                ]
+            );
+        }
 
         $settings = [
             'company_name' => $meta['name'] ?? 'Magasin',

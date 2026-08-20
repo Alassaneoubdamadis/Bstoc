@@ -14,7 +14,6 @@ use App\Models\Unit;
 use App\Models\Warehouse;
 use Carbon\Carbon;
 use Exception;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -40,49 +39,33 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
                 DB::beginTransaction();
 
                 $taxType = null;
+                $rowLabel = $key + 2;
 
                 $productName = Product::whereName($row[0])->exists();
                 if ($productName) {
-                    throw new UnprocessableEntityHttpException('Product Name ' . $row[0] . ' is already exist.');
+                    throw new UnprocessableEntityHttpException('Produit déjà existant : '.$row[0].' (ligne '.$rowLabel.').');
                 }
-                $productCode = Product::Where('code', $row[1])->exists();
+                $productCode = Product::where('code', $row[1])->exists();
                 if ($productCode) {
-                    throw new UnprocessableEntityHttpException('Product Code ' . $row[1] . ' is already exist.');
+                    throw new UnprocessableEntityHttpException('Code produit déjà existant : '.$row[1].' (ligne '.$rowLabel.').');
                 }
 
                 $productCategory = ProductCategory::whereName($row[2])->first();
-                $brand = Brand::whereName($row[3])->first();
+                $brandName = trim((string) ($row[3] ?? ''));
+                $brand = $brandName !== '' ? Brand::whereName($brandName)->first() : null;
 
-                $baseUnit = BaseUnit::whereName(strtolower($row[7]))->first();
+                $baseUnitName = strtolower(trim((string) $row[7]));
+                $baseUnit = BaseUnit::whereRaw('LOWER(name) = ?', [$baseUnitName])->first();
 
-                if ($baseUnit) {
-                    $productUnitId = $baseUnit->id;
-                } else {
-                    throw new UnprocessableEntityHttpException('Product unit ' . $row[7] . ' is not found.');
+                if (! $baseUnit) {
+                    throw new UnprocessableEntityHttpException(
+                        'Unité de base introuvable : '.$row[7].' (ligne '.$rowLabel.'). Utilisez piece, meter ou kilogram.'
+                    );
                 }
 
-                //                if (strtolower($row[7]) == 'piece') {
-                //                    $productUnitId = 1;
-                //                } elseif (strtolower($row[7]) == 'meter') {
-                //                    $productUnitId = 2;
-                //                } elseif (strtolower($row[7]) == 'kilogram') {
-                //                    $productUnitId = 3;
-                //                } else {
-                //                    throw new UnprocessableEntityHttpException('Product unit '.$row[7].' is not found.');
-                //                }
-
-                $saleUnit = Unit::whereRaw('LOWER(name) = ?', [strtolower(trim($row[8]))])
-                    ->whereBaseUnit($productUnitId)
-                    ->first();
-                $purchaseUnit = Unit::whereRaw('LOWER(name) = ?', [strtolower(trim($row[9]))])
-                    ->whereBaseUnit($productUnitId)
-                    ->first();
-                if (!$saleUnit) {
-                    throw new UnprocessableEntityHttpException('Sale unit ' . $row[8] . ' is not found.');
-                }
-                if (!$purchaseUnit) {
-                    throw new UnprocessableEntityHttpException('Purchase unit ' . $row[9] . ' is not found.');
-                }
+                $productUnitId = $baseUnit->id;
+                $saleUnit = $this->resolveUnit(trim((string) $row[8]), $productUnitId);
+                $purchaseUnit = $this->resolveUnit(trim((string) $row[9]), $productUnitId);
 
                 if ($productCategory) {
                     $productCategoryId = $productCategory->id;
@@ -93,25 +76,33 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
 
                 if ($brand) {
                     $brandId = $brand->id;
+                } elseif ($brandName !== '') {
+                    $brand = Brand::create(['name' => $brandName]);
+                    $brandId = $brand->id;
                 } else {
-                    $brand = Brand::create(['name' => $row[3]]);
+                    $brand = Brand::firstOrCreate(['name' => 'Sans marque']);
                     $brandId = $brand->id;
                 }
 
-                if ($row[4] == 'CODE128') {
+                $barcodeRaw = strtoupper(trim((string) $row[4]));
+                if ($barcodeRaw === 'CODE128') {
                     $barcodeSymbol = 1;
-                } elseif ($row[4] == 'CODE39') {
+                } elseif ($barcodeRaw === 'CODE39') {
                     $barcodeSymbol = 2;
                 } else {
-                    throw new UnprocessableEntityHttpException('Product barcode symbol ' . $row[4] . ' is not found.');
+                    throw new UnprocessableEntityHttpException(
+                        'Symbole code-barres invalide : '.$row[4].' (ligne '.$rowLabel.'). Utilisez CODE128 ou CODE39.'
+                    );
                 }
 
-                if (strtolower($row[12]) == 'exclusive') {
+                if (strtolower(trim((string) $row[12])) == 'exclusive') {
                     $taxType = 1;
-                } elseif (strtolower($row[12]) == 'inclusive') {
+                } elseif (strtolower(trim((string) $row[12])) == 'inclusive') {
                     $taxType = 2;
                 } else {
-                    throw new UnprocessableEntityHttpException('Tax type ' . $row[12] . ' is not found.');
+                    throw new UnprocessableEntityHttpException(
+                        'Type de taxe invalide : '.$row[12].' (ligne '.$rowLabel.'). Utilisez EXCLUSIVE ou INCLUSIVE.'
+                    );
                 }
 
                 $mainProduct = MainProduct::create([
@@ -131,10 +122,10 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
                     'product_cost' => $row[5],
                     'product_price' => $row[6],
                     'product_unit' => $productUnitId,
-                    'sale_unit' => !empty($saleUnit) ? $saleUnit->id : null,
-                    'purchase_unit' => !empty($purchaseUnit) ? $purchaseUnit->id : null,
-                    'stock_alert' => isset($row[10]) ? $row[10] : null,
-                    'order_tax' => isset($row[11]) ? $row[11] : null,
+                    'sale_unit' => $saleUnit->id,
+                    'purchase_unit' => $purchaseUnit->id,
+                    'stock_alert' => isset($row[10]) && $row[10] !== '' ? $row[10] : null,
+                    'order_tax' => isset($row[11]) && $row[11] !== '' ? $row[11] : null,
                     'tax_type' => $taxType,
                     'notes' => isset($row[13]) ? $row[13] : null,
                     'main_product_id' => $mainProduct->id,
@@ -142,9 +133,9 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
 
                 $product = Product::create($productData);
 
-                $reference_code = 'PR_' . $product->id;
+                $reference_code = 'PR_'.$product->id;
 
-                if (!empty($row[14]) && !empty($row[15]) && !empty($row[16])) {
+                if (! empty($row[14]) && ! empty($row[15]) && ! empty($row[16])) {
                     $purchaseStock = [
                         'warehouse' => $row[14],
                         'supplier' => $row[15],
@@ -155,7 +146,7 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
 
                     if ($warehouse && $supplier) {
                         manageStock($warehouse->id, $product->id, $purchaseStock['quantity']);
-                        $status = $row[17];
+                        $status = strtolower(trim((string) ($row[17] ?? '')));
                         if ($status == 'received') {
                             $status = 1;
                         } elseif ($status == 'ordered') {
@@ -165,8 +156,8 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
                         }
 
                         $purchaseInputArray = [
-                            'supplier_id' => $warehouse->id,
-                            'warehouse_id' => $supplier->id,
+                            'supplier_id' => $supplier->id,
+                            'warehouse_id' => $warehouse->id,
                             'date' => Carbon::now()->format('Y-m-d'),
                             'status' => $status,
                         ];
@@ -192,7 +183,7 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
                         PurchaseItem::create($purchaseItemInputs);
 
                         $purchase->update([
-                            'reference_code' => getSettingValue('purchase_code') . '_111' . $purchase->id,
+                            'reference_code' => getSettingValue('purchase_code').'_111'.$purchase->id,
                             'grand_total' => $purchaseItemInputs['sub_total'],
                         ]);
                     }
@@ -219,17 +210,55 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
                 }
 
                 Storage::disk(config('app.media_disc'))->put(
-                    'product_barcode/barcode-' . $reference_code . '.png',
+                    'product_barcode/barcode-'.$reference_code.'.png',
                     $generator->getBarcode($row[1], $barcodeType, 4, 70)
                 );
 
                 DB::commit();
+            } catch (UnprocessableEntityHttpException $e) {
+                DB::rollBack();
+                throw $e;
             } catch (Exception $e) {
                 DB::rollBack();
                 Log::error('Product import row '.($key + 2).': '.$e->getMessage());
-                throw new UnprocessableEntityHttpException($e->getMessage());
+                throw new UnprocessableEntityHttpException(
+                    'Import impossible (ligne '.($key + 2).') : '.$e->getMessage()
+                );
             }
         }
+    }
+
+    /**
+     * Trouve l'unité du magasin, ou la crée si elle manque (cas fréquent après provision SaaS).
+     */
+    private function resolveUnit(string $name, int $baseUnitId): Unit
+    {
+        $name = trim($name);
+        if ($name === '') {
+            throw new UnprocessableEntityHttpException('Unité de vente/achat manquante.');
+        }
+
+        $unit = Unit::whereRaw('LOWER(name) = ?', [strtolower($name)])
+            ->whereBaseUnit($baseUnitId)
+            ->first();
+
+        if ($unit) {
+            return $unit;
+        }
+
+        // Tolère "Piece" / "piece" / "pc" pour l'unité de base piece.
+        $base = BaseUnit::find($baseUnitId);
+        if ($base && strtolower($base->name) === strtolower($name)) {
+            return Unit::create([
+                'name' => ucfirst(strtolower($name)),
+                'short_name' => strtolower(substr($name, 0, 2)),
+                'base_unit' => $baseUnitId,
+            ]);
+        }
+
+        throw new UnprocessableEntityHttpException(
+            'Unité introuvable : '.$name.'. Créez-la dans Unités, ou utilisez le même nom que l’unité de base (piece, meter, kilogram).'
+        );
     }
 
     public function chunkSize(): int
@@ -248,7 +277,7 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
             '0' => 'required',
             '1' => 'required',
             '2' => 'required',
-            '3' => 'required',
+            '3' => 'nullable',
             '4' => 'required',
             '5' => 'required|numeric',
             '6' => 'required|numeric',
@@ -264,21 +293,20 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
     public function customValidationMessages()
     {
         return [
-            '0.required' => 'Name field is required',
-            '1.required' => 'Code field is required',
-            '2.required' => 'Category field is required',
-            '3.required' => 'Brand field is required',
-            '4.required' => 'Barcode symbol field is required',
-            '5.required' => 'Product cost field is required',
-            '5.numeric' => 'Product cost field must be a number',
-            '6.required' => 'Product price is required',
-            '6.numeric' => 'Product price field must be a number',
-            '7.required' => 'Product unit field is required',
-            '8.required' => 'Sale unit field is required',
-            '9.required' => 'Purchase unit field is required',
-            '10.nullable|numeric' => 'Stock alert field must be a number',
-            '11.nullable|numeric' => 'Order tax percentage must be a number',
-            '12.required' => 'Tax type field is required',
+            '0.required' => 'Le nom est obligatoire',
+            '1.required' => 'Le code est obligatoire',
+            '2.required' => 'La catégorie est obligatoire',
+            '4.required' => 'Le symbole code-barres est obligatoire (CODE128 ou CODE39)',
+            '5.required' => 'Le coût produit est obligatoire',
+            '5.numeric' => 'Le coût produit doit être un nombre',
+            '6.required' => 'Le prix produit est obligatoire',
+            '6.numeric' => 'Le prix produit doit être un nombre',
+            '7.required' => 'L’unité produit est obligatoire (piece, meter ou kilogram)',
+            '8.required' => 'L’unité de vente est obligatoire',
+            '9.required' => 'L’unité d’achat est obligatoire',
+            '10.numeric' => 'L’alerte stock doit être un nombre',
+            '11.numeric' => 'La taxe doit être un nombre',
+            '12.required' => 'Le type de taxe est obligatoire (EXCLUSIVE ou INCLUSIVE)',
         ];
     }
 }

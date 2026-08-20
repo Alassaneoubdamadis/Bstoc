@@ -198,10 +198,16 @@ export const addImportProduct = (importProduct) => async (dispatch) => {
             dispatch(addToast({ text: "Product Import Create Success " }));
             dispatch(addInToTotalRecord(1));
         })
-        .catch(({ response }) => {
-            dispatch(
-                addToast({ text: response.data.message, type: toastType.ERROR })
-            );
+        .catch((error) => {
+            const data = error?.response?.data;
+            let text = data?.message || 'Import impossible.';
+            if (data?.errors) {
+                const first = Object.values(data.errors).flat()[0];
+                if (first) {
+                    text = first;
+                }
+            }
+            dispatch(addToast({ text, type: toastType.ERROR }));
         });
 };
 export const fetchAllMainProducts = (filter = {}, isLoading = true) => async (dispatch) => {
