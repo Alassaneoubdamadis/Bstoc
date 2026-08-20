@@ -218,7 +218,8 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
     }
 
     /**
-     * Marque / catégorie : retrouve (magasin ou legacy) ou crée, sans planter sur l'unique global.
+     * Marque / catégorie : retrouve (insensible à la casse) ou crée.
+     * Ne dépend pas des index UNIQUE globaux (source des 422 sur Render/TiDB).
      *
      * @param  class-string<\Illuminate\Database\Eloquent\Model>  $modelClass
      */
@@ -230,62 +231,57 @@ class ProductImport implements ToCollection, WithChunkReading, WithStartRow, Wit
         }
 
         $companyId = current_company_id();
-        $needle = strtolower($name);
+        $table = (new $modelClass)->getTable();
+        $needle = mb_strtolower($name);
 
-        $existing = $modelClass::withoutGlobalScopes()
-            ->when($companyId, fn ($q) => $q->where('company_id', $companyId))
-            ->whereRaw('LOWER(name) = ?', [$needle])
-            ->first();
+        $find = function (?int $onlyCompanyId = null, bool $nullCompany = false) use ($table, $needle) {
+            $q = DB::table($table)->whereRaw('LOWER(TRIM(name)) = ?', [$needle]);
+            if ($nullCompany) {
+                $q->whereNull('company_id');
+            } elseif ($onlyCompanyId !== null) {
+                $q->where('company_id', $onlyCompanyId);
+            }
 
-        if ($existing) {
-            return $existing;
+            return $q->orderBy('id')->first();
+        };
+
+        $row = $companyId ? $find($companyId) : null;
+        if (! $row) {
+            $row = $find(null, true);
+        }
+        if (! $row) {
+            $row = $find(null, false); // n'importe quel magasin (unique global encore actif)
         }
 
-        $legacy = $modelClass::withoutGlobalScopes()
-            ->whereNull('company_id')
-            ->whereRaw('LOWER(name) = ?', [$needle])
-            ->first();
-
-        if ($legacy) {
-            $legacy->company_id = $companyId;
-            $legacy->save();
-
-            return $legacy;
-        }
-
-        // Même nom déjà pris par une autre company / casse TiDB : rattacher au magasin courant si possible.
-        $any = $modelClass::withoutGlobalScopes()
-            ->whereRaw('LOWER(name) = ?', [$needle])
-            ->first();
-
-        if ($any) {
-            // Unique global : on réutilise la ligne existante pour ce magasin (pas idéal multi-tenant,
-            // mais évite le 422 ; l'index sera ensuite (company_id, name)).
-            if ($companyId && (int) $any->company_id !== (int) $companyId) {
+        if ($row) {
+            if ($companyId && (int) ($row->company_id ?? 0) !== (int) $companyId) {
                 try {
-                    return $modelClass::withoutGlobalScopes()->create([
-                        'name' => $name.' #'.$companyId,
+                    DB::table($table)->where('id', $row->id)->update([
                         'company_id' => $companyId,
+                        'updated_at' => now(),
                     ]);
+                    $row->company_id = $companyId;
                 } catch (\Throwable $e) {
-                    return $any;
+                    // garde la ligne telle quelle
                 }
             }
 
-            return $any;
+            return $modelClass::withoutGlobalScopes()->find($row->id);
         }
 
         try {
-            return $modelClass::withoutGlobalScopes()->create([
+            $id = DB::table($table)->insertGetId([
                 'name' => $name,
                 'company_id' => $companyId,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
+
+            return $modelClass::withoutGlobalScopes()->find($id);
         } catch (\Throwable $e) {
-            $fallback = $modelClass::withoutGlobalScopes()
-                ->whereRaw('LOWER(name) = ?', [$needle])
-                ->first();
-            if ($fallback) {
-                return $fallback;
+            $again = $find(null, false);
+            if ($again) {
+                return $modelClass::withoutGlobalScopes()->find($again->id);
             }
             throw new UnprocessableEntityHttpException(
                 class_basename($modelClass).' « '.$name.' » : '.$e->getMessage()
